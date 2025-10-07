@@ -1,0 +1,46 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+*.so
+*.egg
+*.egg-info/
+*.manifest
+*.spec
+
+# Virtual environments
+venv/
+env/
+.venv/
+.env/
+.env
+
+# IDEs and editors
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Logs and temporary files
+*.log
+*.tmp
+*.bak
+*.swp
+
+# Sensitive or persistent data
+app/storage/*.json
+
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# Python packaging
+dist/
+build/
+__pypackages__/
+*.egg-info/
+
+# FastAPI / Uvicorn
+*.pid
