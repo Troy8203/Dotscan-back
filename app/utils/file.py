@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-SIZE = os.getenv("MAX_SIZE", "10")
+SIZE = int(os.getenv("MAX_SIZE", "10"))
 ALLOWED_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg"}
 MAX_SIZE = SIZE * 1024 * 1024
 
