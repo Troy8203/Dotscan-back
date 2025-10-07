@@ -1,5 +1,6 @@
-from pydantic import BaseModel, constr
+from pydantic import BaseModel
+from uuid import UUID
 
 
 class ImageRequest(BaseModel):
-    image_name: constr(pattern=r"^[\w\-]+\.(jpg|png|gif)$")
+    uuid: UUID

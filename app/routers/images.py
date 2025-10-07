@@ -13,12 +13,13 @@ router = APIRouter(tags=["Images"])
 
 
 @router.get(
-    "/{image_name}",
+    "/{uuid}",
     summary="API para obtener una imagen",
     description="Retorna una imagen del almacenamiento NFS",
 )
 async def get_image(request: ImageRequest = Depends()):
-    return get_image_service(request.image_name)
+    uuid_str = str(request.uuid)
+    return get_image_service(uuid_str)
 
 
 @router.post(

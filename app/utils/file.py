@@ -1,4 +1,5 @@
 import os
+import uuid
 from pathlib import Path
 from fastapi import HTTPException, UploadFile
 from dotenv import load_dotenv
@@ -39,3 +40,9 @@ def validate_file_size(file: UploadFile) -> int:
 
 def get_file_extension(filename: str) -> str:
     return Path(filename).suffix.lower()
+
+
+def generate_unique_filename(filename: str) -> str:
+    extension = get_file_extension(filename)
+    unique_id = uuid.uuid4()
+    return f"{unique_id}{extension}"
