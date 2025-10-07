@@ -1,6 +1,8 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 from fastapi.openapi.utils import get_openapi
 from app.routers import images, items, users
+from app.core.utils import error_response
 import os
 from dotenv import load_dotenv
 
@@ -15,6 +17,19 @@ app = FastAPI(
     version=version,
     description=description,
 )
+
+
+@app.middleware("http")
+async def global_error_handler(request: Request, call_next):
+    try:
+        response = await call_next(request)
+        return response
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content=error_response(f"Error interno del servidor: {str(e)}"),
+        )
+
 
 # Routers
 app.include_router(images.router, prefix="/images", tags=["Images"])
