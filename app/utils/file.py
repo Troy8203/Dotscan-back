@@ -1,8 +1,13 @@
+import os
 from pathlib import Path
 from fastapi import HTTPException, UploadFile
+from dotenv import load_dotenv
 
+load_dotenv()
+
+SIZE = os.getenv("MAX_SIZE", "10")
 ALLOWED_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg"}
-MAX_SIZE = 10 * 1024 * 1024  # 10MB
+MAX_SIZE = SIZE * 1024 * 1024
 
 
 def is_valid_extension(filename: str) -> bool:
