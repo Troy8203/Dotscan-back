@@ -1,49 +1,44 @@
-from fastapi import APIRouter, HTTPException, UploadFile, File
+from fastapi import APIRouter, HTTPException, UploadFile, File, Depends
 from fastapi.responses import FileResponse, JSONResponse
 import os
 import shutil
 from pathlib import Path
+from dotenv import load_dotenv
+
+from app.schemas.image import ImageRequest
+
+load_dotenv()
 
 router = APIRouter(tags=["Images"])
 
-IMAGES_DIR = "/var/home/troy/Downloads/nfs-img"
+NFS_PATH = os.getenv("NFS_PATH", "/")
 
-# Asegurar que el directorio existe
-Path(IMAGES_DIR).mkdir(parents=True, exist_ok=True)
-
-# Extensiones de imagen permitidas
 ALLOWED_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg"}
 
 
 @router.get(
     "/{image_name}",
-    summary="Obtener una imagen",
-    description="Devuelve una imagen por su nombre desde el almacenamiento NFS",
-    response_description="Archivo de imagen binario",
+    summary="API to get an image",
+    description="Return an image from the server",
 )
-async def get_image(image_name: str):
-    """
-    Obtener una imagen específica por nombre de archivo.
+async def get_image(request: ImageRequest = Depends()):
+    image_name = request.image_name
 
-    - **image_name**: Nombre del archivo de imagen (ej: logo.png, profile.jpg)
-
-    Returns el archivo de imagen binario.
-    """
     if ".." in image_name or "/" in image_name:
-        raise HTTPException(status_code=400, detail="Nombre de imagen inválido")
+        raise HTTPException(status_code=400, detail="File name invalid")
 
-    image_path = os.path.join(IMAGES_DIR, image_name)
+    image_path = os.path.join(NFS_PATH, image_name)
 
     if not os.path.exists(image_path):
-        raise HTTPException(status_code=404, detail="Imagen no encontrada")
+        raise HTTPException(status_code=404, detail="Image not found")
 
     return FileResponse(image_path)
 
 
 @router.post(
     "/upload/",
-    summary="Subir una imagen",
-    description="Sube una imagen al servidor y la guarda en el almacenamiento NFS",
+    summary="Upload an image",
+    description="Upload an image to the server",
     response_model=dict,
 )
 async def upload_image(file: UploadFile = File(...)):
@@ -76,7 +71,7 @@ async def upload_image(file: UploadFile = File(...)):
 
     # Crear nombre seguro para el archivo
     safe_filename = "".join(c for c in file.filename if c.isalnum() or c in "._-")
-    file_path = os.path.join(IMAGES_DIR, safe_filename)
+    file_path = os.path.join(NFS_PATH, safe_filename)
 
     # Verificar si el archivo ya existe
     if os.path.exists(file_path):
@@ -125,7 +120,7 @@ async def delete_image(image_name: str):
     if ".." in image_name or "/" in image_name:
         raise HTTPException(status_code=400, detail="Nombre de imagen inválido")
 
-    image_path = os.path.join(IMAGES_DIR, image_name)
+    image_path = os.path.join(NFS_PATH, image_name)
 
     if not os.path.exists(image_path):
         raise HTTPException(status_code=404, detail="Imagen no encontrada")
