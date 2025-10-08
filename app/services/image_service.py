@@ -8,6 +8,7 @@ from fastapi.responses import FileResponse
 
 # Core
 from app.core.utils import success_response, error_response
+from app.core.messages import Messages
 
 # Utils
 from app.utils.file import (
@@ -27,7 +28,7 @@ def get_image_service(uuid: str):
     matching_files = glob.glob(pattern)
 
     if not matching_files:
-        return error_response("Imagen no encontrada")
+        return error_response(Messages.IMAGE_NOT_FOUND, status_code=404)
 
     image_path = matching_files[0]
     return FileResponse(image_path)
@@ -45,7 +46,7 @@ def upload_image_service(file: UploadFile):
             shutil.copyfileobj(file.file, buffer)
 
         return success_response(
-            message="Imagen subida correctamente",
+            message=Messages.IMAGE_UPLOAD_SUCCESS,
             data={
                 "filename": safe_filename,
                 "file_size": file_size,
@@ -54,8 +55,8 @@ def upload_image_service(file: UploadFile):
             },
         )
 
-    except Exception as e:
-        return error_response(f"Error al guardar la imagen: {str(e)}")
+    except Exception:
+        return error_response(Messages.IMAGE_UPLOAD_ERROR, status_code=500)
 
 
 def upload_batch_images_service(files: List[UploadFile]):
@@ -104,7 +105,7 @@ def upload_batch_images_service(files: List[UploadFile]):
             failed_uploads += 1
 
     return success_response(
-        message=f"Procesamiento de lote completado",
+        message=Messages.IMAGE_UPLOAD_BATCH_SUCCESS,
         data={
             "total_files": len(files),
             "successful_uploads": successful_uploads,
