@@ -1,4 +1,5 @@
 import time
+import json
 from datetime import datetime
 from fastapi import Request
 from .logging_config import get_logger
@@ -29,6 +30,14 @@ async def log_responses_middleware(request: Request, call_next):
 
         try:
             body_preview = body_content.decode("utf-8")
+
+            try:
+                json_data = json.loads(body_preview)
+                formatted_json = json.dumps(json_data, indent=2, ensure_ascii=False)
+                body_preview = f"\n{formatted_json}"
+            except (json.JSONDecodeError, UnicodeDecodeError):
+                pass
+
         except:
             body_preview = f"[Binary data - {len(body_content)} bytes]"
 
@@ -48,7 +57,7 @@ async def log_responses_middleware(request: Request, call_next):
     except Exception as e:
         logger.warning(f"Could not log response: {e}")
         logger.info(
-            f"🌐 {timestamp} | {client_ip} | {request.method} {request.url.path} | "
+            f"{timestamp} | {client_ip} | {request.method} {request.url.path} | "
             f"Status: {response.status_code} | Time: {process_time:.3f}s"
         )
 
