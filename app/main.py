@@ -1,6 +1,7 @@
 import os
 import time
 import logging
+import sys
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.openapi.utils import get_openapi
@@ -8,6 +9,57 @@ from app.routers import images, items, users
 from app.core.utils import error_response
 from dotenv import load_dotenv
 from datetime import datetime
+
+
+class LevelColorFormatter(logging.Formatter):
+    """Formateador que colorea los niveles de logging"""
+
+    LEVEL_COLORS = {
+        "DEBUG": "\033[46m\033[97m",
+        "INFO": "\033[44m\033[97m",
+        "WARNING": "\033[43m\033[97m",
+        "ERROR": "\033[41m\033[97m",
+        "CRITICAL": "\033[45m\033[97m",
+        "RESET": "\033[0m",
+    }
+
+    def format(self, record):
+        # Aplicar color solo al nivel del log
+        level_color = self.LEVEL_COLORS.get(record.levelname, self.LEVEL_COLORS["INFO"])
+
+        # Formato: [NIVEL] mensaje
+        colored_level = f"{level_color}[{record.levelname}]{self.LEVEL_COLORS['RESET']}"
+        record.msg = f"{colored_level} {record.msg}"
+
+        return super().format(record)
+
+
+def setup_complete_logging():
+    """Configurar TODOS los loggers de Uvicorn"""
+    uvicorn_loggers = [
+        "uvicorn",
+        "uvicorn.error",
+        "uvicorn.access",
+        "uvicorn.asgi",
+        "uvicorn.server",
+    ]
+
+    for logger_name in uvicorn_loggers:
+        logger = logging.getLogger(logger_name)
+        logger.setLevel(logging.INFO)
+
+        for handler in logger.handlers[:]:
+            logger.removeHandler(handler)
+
+        handler = logging.StreamHandler(sys.stdout)
+        handler.setFormatter(LevelColorFormatter("%(message)s"))
+        logger.addHandler(handler)
+
+        # Propagar=False para evitar duplicados
+        logger.propagate = False
+
+
+setup_complete_logging()
 
 load_dotenv()
 
@@ -51,11 +103,18 @@ async def log_responses(request: Request, call_next):
         except:
             body_preview = f"[Binary data - {len(body_content)} bytes]"
 
-        logger.info(
-            f"🌐 {timestamp} | {client_ip} | {request.method} {request.url.path} | "
-            f"Status: {response.status_code} | Time: {process_time:.3f}s"
-        )
-        logger.info(f"📦 Response Body: {body_preview}")
+        if response.status_code >= 400:
+            logger.error(
+                f"🌐 {timestamp} | {client_ip} | {request.method} {request.url.path} | "
+                f"Status: {response.status_code} | Time: {process_time:.3f}s"
+            )
+            logger.error(f"📦 Response Body: {body_preview}")
+        else:
+            logger.info(
+                f"🌐 {timestamp} | {client_ip} | {request.method} {request.url.path} | "
+                f"Status: {response.status_code} | Time: {process_time:.3f}s"
+            )
+            logger.info(f"📦 Response Body: {body_preview}")
 
     except Exception as e:
         logger.warning(f"Could not log response: {e}")
