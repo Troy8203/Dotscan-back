@@ -1,3 +1,4 @@
+from typing import List
 from fastapi import APIRouter, UploadFile, File, Depends
 
 # Schemas
@@ -7,6 +8,7 @@ from app.schemas.image import ImageRequest
 from app.services.image_service import (
     get_image_service,
     upload_image_service,
+    upload_batch_images_service,
 )
 
 router = APIRouter(tags=["Images"])
@@ -29,3 +31,12 @@ async def get_image(request: ImageRequest = Depends()):
 )
 async def upload_image(file: UploadFile = File(...)):
     return upload_image_service(file)
+
+
+@router.post(
+    "/batch",
+    summary="API para subir múltiples imágenes en lote",
+    description="Retorna el resultado de todas las imágenes procesadas",
+)
+async def upload_batch_images(files: List[UploadFile] = File(...)):
+    return upload_batch_images_service(files)
