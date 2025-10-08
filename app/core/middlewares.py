@@ -7,7 +7,6 @@ logger = get_logger()
 
 
 async def log_responses_middleware(request: Request, call_next):
-    """Middleware para loguear todas las respuestas"""
     start_time = time.time()
     client_ip = request.client.host if request.client else "unknown"
 
@@ -34,17 +33,17 @@ async def log_responses_middleware(request: Request, call_next):
             body_preview = f"[Binary data - {len(body_content)} bytes]"
 
         if response.status_code >= 400:
-            logger.error(
-                f"🌐 {timestamp} | {client_ip} | {request.method} {request.url.path} | "
+            logger.warning(
+                f"{timestamp} | {client_ip} | {request.method} {request.url.path} | "
                 f"Status: {response.status_code} | Time: {process_time:.3f}s"
             )
-            logger.error(f"📦 Response Body: {body_preview}")
+            logger.warning(f"Response Body: {body_preview}")
         else:
             logger.info(
-                f"🌐 {timestamp} | {client_ip} | {request.method} {request.url.path} | "
+                f"{timestamp} | {client_ip} | {request.method} {request.url.path} | "
                 f"Status: {response.status_code} | Time: {process_time:.3f}s"
             )
-            logger.info(f"📦 Response Body: {body_preview}")
+            logger.info(f"Response Body: {body_preview}")
 
     except Exception as e:
         logger.warning(f"Could not log response: {e}")
