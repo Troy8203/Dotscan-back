@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 
 # Core
 from app.core import setup_logging, log_responses_middleware
-from app.routers import images, items, users
+from app.routers import images, braille
 
 # Configurar logging primero
 setup_logging()
@@ -27,6 +27,7 @@ app.middleware("http")(log_responses_middleware)
 
 # Routers
 app.include_router(images.router, prefix="/images", tags=["Images"])
+app.include_router(braille.router, prefix="/braille", tags=["Braille"])
 
 
 def custom_openapi():
