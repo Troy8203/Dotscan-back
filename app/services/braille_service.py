@@ -1,7 +1,10 @@
 import os
 import io
+import cv2
 import glob
 import shutil
+import numpy as np
+from PIL import Image
 from typing import List
 from fastapi import HTTPException, UploadFile
 from fastapi.responses import FileResponse, StreamingResponse
@@ -36,72 +39,97 @@ def get_image_service(uuid: str):
     return FileResponse(image_path)
 
 
-def upload_image_service(file: UploadFile):
-    import io
-    import numpy as np
-    import cv2
-    from PIL import Image
-    import shutil
-    import os
-    from fastapi.responses import StreamingResponse
-    from app.core.utils import error_response
-    from app.core.messages import Messages
-    from app.utils.file import (
-        generate_unique_filename,
-        validate_file_extension,
-        validate_file_size,
-    )
-    from app.models.inference import model  # tu modelo YOLOv5 ya cargado
+def upload_image_service(
+    file: UploadFile, conf_threshold: float = 0.15, iou_threshold: float = 0.15
+):
+
+    # Mapa binario → letra según tu vector
+    BINARY_TO_LETTER = {
+        "100000": "A",
+        "110000": "B",
+        "100100": "C",
+        "100110": "D",
+        "100010": "E",
+        "110100": "F",
+        "110110": "G",
+        "110010": "H",
+        "010100": "I",
+        "010110": "J",
+        "101000": "K",
+        "111000": "L",
+        "101100": "M",
+        "101110": "N",
+        "110111": "Ñ",
+        "101010": "O",
+        "111100": "P",
+        "111110": "Q",
+        "111010": "R",
+        "011100": "S",
+        "011110": "T",
+        "101001": "U",
+        "001111": "V",
+        "010111": "W",
+        "101101": "X",
+        "101111": "Y",
+        "101011": "Z",
+        "111001": "#",
+        "010000": ",",
+        "001000": ".",
+    }
 
     try:
-        # 1️⃣ Validaciones
         validate_file_extension(file.filename)
         validate_file_size(file)
 
-        # 2️⃣ Guardar temporalmente la imagen en NFS (o /tmp si quieres)
+        # 2️⃣ Guardar temporalmente la imagen
         safe_filename = generate_unique_filename(file.filename)
         file_path = os.path.join(NFS_PATH, safe_filename)
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
 
-        # 3️⃣ Procesar imagen con YOLOv5
-        results = model(file_path)
-
-        # 4️⃣ Abrir imagen original en numpy
+        # 3️⃣ Detección con YOLOv8 (ajustable)
+        res = model.predict(source=file_path, conf=conf_threshold, iou=iou_threshold)
         img = np.array(Image.open(file_path).convert("RGB"))
 
-        # 5️⃣ Dibujar detecciones con un solo color uniforme
-        border_color = (245, 166, 35)  # verde en BGR
-        font_color = (35, 35, 35)
+        border_color = (245, 166, 35)
+        font_color = (255, 255, 255)
+        bg_color = (245, 166, 35)
         thickness = 2
-        font_scale = 0.8
+        font_scale = 0.35
 
-        detections = results.pandas().xyxy[
-            0
-        ]  # xmin, ymin, xmax, ymax, confidence, name
+        vector_resultados = []
 
-        for _, row in detections.iterrows():
-            x1, y1, x2, y2 = (
-                int(row["xmin"]),
-                int(row["ymin"]),
-                int(row["xmax"]),
-                int(row["ymax"]),
-            )
-            label = str(row["name"])
-            # Dibujar rectángulo
+        boxes = res[0].boxes  # resultados de la primera imagen
+        for box in boxes:
+            xyxy = box.xyxy[0].cpu().numpy()
+            x1, y1, x2, y2 = map(int, xyxy)
+            conf = float(box.conf.cpu())
+
+            cls_idx = int(box.cls.cpu().numpy())
+            cls_bin = model.names[cls_idx].strip()
+
+            letter = BINARY_TO_LETTER.get(cls_bin, "?")
+
+            # Dibujar rectángulo y texto
+            text_label = f"{letter}"
             cv2.rectangle(img, (x1, y1), (x2, y2), border_color, thickness)
-            # Escribir texto
+            (text_w, text_h), _ = cv2.getTextSize(
+                text_label, cv2.FONT_HERSHEY_SIMPLEX, font_scale * 2, 2
+            )
+            cv2.rectangle(
+                img, (x1, y1 - text_h - 6), (x1 + text_w + 4, y1), bg_color, -1
+            )
             cv2.putText(
                 img,
-                label,
-                (x1, y1 - 5),
+                text_label,
+                (x1 + 2, y1 - 4),
                 cv2.FONT_HERSHEY_SIMPLEX,
-                font_scale,
+                font_scale * 2,
                 font_color,
-                3,
+                2,
             )
 
-        # 6️⃣ Convertir a PIL y luego a BytesIO para StreamingResponse
+        # 4️⃣ Convertir imagen
         pil_img = Image.fromarray(img)
         img_bytes = io.BytesIO()
         pil_img.save(img_bytes, format="JPEG")
