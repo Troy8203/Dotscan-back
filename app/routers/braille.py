@@ -9,6 +9,7 @@ from app.services.braille_service import (
     get_image_service,
     upload_image_service,
     upload_batch_images_service,
+    upload_image_service_to_text,
 )
 
 router = APIRouter(tags=["Braille"])
@@ -31,6 +32,15 @@ async def get_image(request: UuidBraille = Depends()):
 )
 async def upload_image(file: UploadFile = File(...)):
     return upload_image_service(file)
+
+
+@router.post(
+    "/texto-test",
+    summary="API para traducir una imagen",
+    description="Sube una imagen y retorna una imagen con los caracteres traducidos",
+)
+async def upload_image(file: UploadFile = File(...)):
+    return upload_image_service_to_text(file)
 
 
 @router.post(

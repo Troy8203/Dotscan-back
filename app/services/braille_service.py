@@ -20,7 +20,7 @@ from app.utils.file import (
     validate_file_extension,
     validate_file_size,
 )
-from app.utils.translate import image_braille_to_segmentation
+from app.utils.translate import image_braille_to_segmentation, image_braille_to_text
 
 NFS_PATH = os.getenv("NFS_PATH", "/")
 
@@ -45,7 +45,7 @@ def upload_image_service(
     try:
         validate_file_extension(file.filename)
         validate_file_size(file)
-        img_bytes = image_braille_to_text(file, conf_threshold, iou_threshold)
+        img_bytes = image_braille_to_segmentation(file, conf_threshold, iou_threshold)
         return StreamingResponse(img_bytes, media_type="image/jpeg")
     except Exception as e:
         return error_response(f"{Messages.IMAGE_UPLOAD_ERROR}: {e}", status_code=500)
@@ -57,8 +57,11 @@ def upload_image_service_to_text(
     try:
         validate_file_extension(file.filename)
         validate_file_size(file)
-        img_bytes = image_braille_to_text(file, conf_threshold, iou_threshold)
-        return success_response(img_bytes)
+        response = image_braille_to_text(file, conf_threshold, iou_threshold)
+        return success_response(
+            message=Messages.SUCCESS_OPERATION,
+            data={"text": response},
+        )
     except Exception as e:
         return error_response(f"{Messages.IMAGE_UPLOAD_ERROR}: {e}", status_code=500)
 
