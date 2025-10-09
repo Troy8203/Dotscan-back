@@ -21,7 +21,9 @@ from app.utils.file import (
     validate_file_size,
 )
 from app.utils.translate import binary_to_letter
-from app.models.inference import model
+
+# Models
+from app.models.predictor import run_model_prediction
 
 NFS_PATH = os.getenv("NFS_PATH", "/")
 
@@ -47,14 +49,14 @@ def upload_image_service(
         validate_file_extension(file.filename)
         validate_file_size(file)
 
-        # 2️⃣ Guardar temporalmente la imagen
+        # 1️⃣ Guardar temporalmente la imagen
         safe_filename = generate_unique_filename(file.filename)
         file_path = os.path.join(NFS_PATH, safe_filename)
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
 
-        # 3️⃣ Detección con YOLOv8 (ajustable)
-        res = model.predict(source=file_path, conf=conf_threshold, iou=iou_threshold)
+        # 2️⃣ Ejecutar modelo refactorizado
+        res = run_model_prediction(file_path, conf_threshold, iou_threshold)
         img = np.array(Image.open(file_path).convert("RGB"))
 
         border_color = (245, 166, 35)
@@ -66,15 +68,17 @@ def upload_image_service(
         vector_resultados = []
 
         boxes = res[0].boxes  # resultados de la primera imagen
+        model_names = res[0].names  # obtener nombres de clases
+
         for box in boxes:
             xyxy = box.xyxy[0].cpu().numpy()
             x1, y1, x2, y2 = map(int, xyxy)
             conf = float(box.conf.cpu())
 
             cls_idx = int(box.cls.cpu().numpy())
-            cls_bin = model.names[cls_idx].strip()
+            cls_bin = model_names[cls_idx].strip()
 
-            # 🔤 Solo usar binary_to_letter()
+            # 🔤 Traducir binario → letra
             letter = binary_to_letter(cls_bin)
 
             # Dibujar rectángulo y texto
@@ -105,7 +109,7 @@ def upload_image_service(
                 }
             )
 
-        # 4️⃣ Convertir imagen
+        # 3️⃣ Convertir imagen a JPEG
         pil_img = Image.fromarray(img)
         img_bytes = io.BytesIO()
         pil_img.save(img_bytes, format="JPEG")
