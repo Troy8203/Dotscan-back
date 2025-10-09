@@ -37,29 +37,72 @@ def get_image_service(uuid: str):
 
 
 def upload_image_service(file: UploadFile):
+    import io
+    import numpy as np
+    import cv2
+    from PIL import Image
+    import shutil
+    import os
+    from fastapi.responses import StreamingResponse
+    from app.core.utils import error_response
+    from app.core.messages import Messages
+    from app.utils.file import (
+        generate_unique_filename,
+        validate_file_extension,
+        validate_file_size,
+    )
+    from app.models.inference import model  # tu modelo YOLOv5 ya cargado
+
     try:
-        # Validaciones
+        # 1️⃣ Validaciones
         validate_file_extension(file.filename)
         validate_file_size(file)
 
-        # Guardar temporalmente la imagen en NFS
+        # 2️⃣ Guardar temporalmente la imagen en NFS (o /tmp si quieres)
         safe_filename = generate_unique_filename(file.filename)
         file_path = os.path.join(NFS_PATH, safe_filename)
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
 
-        # Procesar imagen con YOLOv5
+        # 3️⃣ Procesar imagen con YOLOv5
         results = model(file_path)
 
-        print("🔍 Detecciones:", results)
+        # 4️⃣ Abrir imagen original en numpy
+        img = np.array(Image.open(file_path).convert("RGB"))
 
-        rendered_img = results.render()[0]  # results.render() devuelve lista de arrays
-        from PIL import Image
-        import numpy as np
+        # 5️⃣ Dibujar detecciones con un solo color uniforme
+        border_color = (245, 166, 35)  # verde en BGR
+        font_color = (35, 35, 35)
+        thickness = 2
+        font_scale = 0.8
 
-        print("🔍 Detecciones:", rendered_img)
+        detections = results.pandas().xyxy[
+            0
+        ]  # xmin, ymin, xmax, ymax, confidence, name
 
-        pil_img = Image.fromarray(rendered_img)
+        for _, row in detections.iterrows():
+            x1, y1, x2, y2 = (
+                int(row["xmin"]),
+                int(row["ymin"]),
+                int(row["xmax"]),
+                int(row["ymax"]),
+            )
+            label = str(row["name"])
+            # Dibujar rectángulo
+            cv2.rectangle(img, (x1, y1), (x2, y2), border_color, thickness)
+            # Escribir texto
+            cv2.putText(
+                img,
+                label,
+                (x1, y1 - 5),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                font_scale,
+                font_color,
+                3,
+            )
+
+        # 6️⃣ Convertir a PIL y luego a BytesIO para StreamingResponse
+        pil_img = Image.fromarray(img)
         img_bytes = io.BytesIO()
         pil_img.save(img_bytes, format="JPEG")
         img_bytes.seek(0)
