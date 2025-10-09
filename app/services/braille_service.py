@@ -20,7 +20,7 @@ from app.utils.file import (
     validate_file_extension,
     validate_file_size,
 )
-from app.utils.translate import binary_to_letter
+from app.utils.translate import draw_braille_detections
 
 # Models
 from app.models.predictor import run_model_prediction
@@ -49,71 +49,17 @@ def upload_image_service(
         validate_file_extension(file.filename)
         validate_file_size(file)
 
-        # 1️⃣ Guardar temporalmente la imagen
+        # ? Save temporal file
         safe_filename = generate_unique_filename(file.filename)
         file_path = os.path.join(NFS_PATH, safe_filename)
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
 
-        # 2️⃣ Ejecutar modelo refactorizado
-        res = run_model_prediction(file_path, conf_threshold, iou_threshold)
-        img = np.array(Image.open(file_path).convert("RGB"))
+        # ? Run model
+        results = run_model_prediction(file_path, conf_threshold, iou_threshold)
 
-        border_color = (245, 166, 35)
-        font_color = (255, 255, 255)
-        bg_color = (245, 166, 35)
-        thickness = 2
-        font_scale = 0.35
-
-        vector_resultados = []
-
-        boxes = res[0].boxes  # resultados de la primera imagen
-        model_names = res[0].names  # obtener nombres de clases
-
-        for box in boxes:
-            xyxy = box.xyxy[0].cpu().numpy()
-            x1, y1, x2, y2 = map(int, xyxy)
-            conf = float(box.conf.cpu())
-
-            cls_idx = int(box.cls.cpu().numpy())
-            cls_bin = model_names[cls_idx].strip()
-
-            # 🔤 Traducir binario → letra
-            letter = binary_to_letter(cls_bin)
-
-            # Dibujar rectángulo y texto
-            text_label = f"{letter}"
-            cv2.rectangle(img, (x1, y1), (x2, y2), border_color, thickness)
-            (text_w, text_h), _ = cv2.getTextSize(
-                text_label, cv2.FONT_HERSHEY_SIMPLEX, font_scale * 2, 2
-            )
-            cv2.rectangle(
-                img, (x1, y1 - text_h - 6), (x1 + text_w + 4, y1), bg_color, -1
-            )
-            cv2.putText(
-                img,
-                text_label,
-                (x1 + 2, y1 - 4),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                font_scale * 2,
-                font_color,
-                2,
-            )
-
-            vector_resultados.append(
-                {
-                    "binary": cls_bin,
-                    "letter": letter,
-                    "confidence": round(conf, 3),
-                    "bbox": [x1, y1, x2, y2],
-                }
-            )
-
-        # 3️⃣ Convertir imagen a JPEG
-        pil_img = Image.fromarray(img)
-        img_bytes = io.BytesIO()
-        pil_img.save(img_bytes, format="JPEG")
-        img_bytes.seek(0)
+        # ? Draw detections
+        img_bytes, vector_resultados = draw_braille_detections(file_path, results)
 
         return StreamingResponse(img_bytes, media_type="image/jpeg")
 

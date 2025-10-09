@@ -7,7 +7,12 @@ model = YOLO(MODEL_PATH)
 
 
 def run_model_prediction(
-    image_path: str, conf_threshold: float = 0.15, iou_threshold: float = 0.15
+    image_path: str,
+    conf_threshold: float = 0.15,
+    iou_threshold: float = 0.15,
+    verbose: bool = False,
 ):
-    results = model.predict(source=image_path, conf=conf_threshold, iou=iou_threshold)
+    results = model.predict(
+        source=image_path, conf=conf_threshold, iou=iou_threshold, verbose=verbose
+    )
     return results
