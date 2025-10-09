@@ -37,7 +37,6 @@ def get_image_service(uuid: str):
 def upload_image_service(file: UploadFile):
     validate_file_extension(file.filename)
     file_size = validate_file_size(file)
-
     safe_filename = generate_unique_filename(file.filename)
     file_path = os.path.join(NFS_PATH, safe_filename)
 
@@ -45,17 +44,15 @@ def upload_image_service(file: UploadFile):
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
 
-        return success_response(
-            message=Messages.IMAGE_UPLOAD_SUCCESS,
-            data={
-                "filename": safe_filename,
-                "file_size": file_size,
-                "content_type": file.content_type,
-                "url": f"/images/{safe_filename}",
-            },
-        )
+        output_dir = os.path.join(NFS_PATH, "detections")
+        os.makedirs(output_dir, exist_ok=True)
 
-    except Exception:
+        processed_image_path = predict_and_save(file_path, output_dir)
+
+        return FileResponse(processed_image_path, media_type="image/jpeg")
+
+    except Exception as e:
+        print(f"❌ Error procesando imagen: {e}")
         return error_response(Messages.IMAGE_UPLOAD_ERROR, status_code=500)
 
 
