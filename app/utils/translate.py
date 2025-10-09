@@ -1,8 +1,19 @@
-import cv2
-import numpy as np
-from PIL import Image
 import io
+import os
+import shutil
+import numpy as np
+import cv2
+from PIL import Image
 
+# Core
+from app.core.messages import Messages
+
+# Utils
+from app.utils.file import generate_unique_filename
+
+# Models
+from app.models.inference import model
+from app.models.predictor import run_model_prediction
 
 BINARY_TO_LETTER = {
     "100000": "A",
@@ -116,3 +127,20 @@ def draw_braille_detections(
     img_bytes.seek(0)
 
     return img_bytes, vector_resultados
+
+
+def image_braille_to_segmentation(
+    file, conf_threshold: float = 0.15, iou_threshold: float = 0.15
+):
+    try:
+        safe_filename = generate_unique_filename(file.filename)
+        temp_path = os.path.join("/tmp", safe_filename)
+        with open(temp_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+
+        results = run_model_prediction(temp_path, conf_threshold, iou_threshold)
+        img_bytes, _ = draw_braille_detections(temp_path, results)
+        return img_bytes
+
+    except Exception as e:
+        raise RuntimeError("{Messages.EXCEPTION_DEFAULT}: {e}")

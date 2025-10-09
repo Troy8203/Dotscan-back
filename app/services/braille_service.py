@@ -20,10 +20,7 @@ from app.utils.file import (
     validate_file_extension,
     validate_file_size,
 )
-from app.utils.translate import draw_braille_detections
-
-# Models
-from app.models.predictor import run_model_prediction
+from app.utils.translate import image_braille_to_segmentation
 
 NFS_PATH = os.getenv("NFS_PATH", "/")
 
@@ -48,21 +45,8 @@ def upload_image_service(
     try:
         validate_file_extension(file.filename)
         validate_file_size(file)
-
-        # ? Save temporal file
-        safe_filename = generate_unique_filename(file.filename)
-        file_path = os.path.join(NFS_PATH, safe_filename)
-        with open(file_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
-
-        # ? Run model
-        results = run_model_prediction(file_path, conf_threshold, iou_threshold)
-
-        # ? Draw detections
-        img_bytes, vector_resultados = draw_braille_detections(file_path, results)
-
+        img_bytes = image_braille_to_segmentation(file, conf_threshold, iou_threshold)
         return StreamingResponse(img_bytes, media_type="image/jpeg")
-
     except Exception as e:
         return error_response(f"{Messages.IMAGE_UPLOAD_ERROR}: {e}", status_code=500)
 
