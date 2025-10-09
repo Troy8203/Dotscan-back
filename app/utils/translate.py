@@ -129,6 +129,7 @@ def draw_braille_detections(
     return img_bytes, vector_resultados
 
 
+# ? Function to convert image to segmentation
 def image_braille_to_segmentation(
     file, conf_threshold: float = 0.15, iou_threshold: float = 0.15
 ):
@@ -144,3 +145,85 @@ def image_braille_to_segmentation(
 
     except Exception as e:
         raise RuntimeError("{Messages.EXCEPTION_DEFAULT}: {e}")
+
+
+# ? Extract detections from image
+def extract_detections(temp_path: str, conf_threshold: float, iou_threshold: float):
+    results = run_model_prediction(temp_path, conf_threshold, iou_threshold)
+    boxes = results[0].boxes
+    model_names = results[0].names
+
+    detections = []
+    for box in boxes:
+        xyxy = box.xyxy[0].cpu().numpy()
+        x1, y1, x2, y2 = map(int, xyxy)
+        cls_idx = int(box.cls.cpu().numpy())
+        cls_bin = model_names[cls_idx].strip()
+
+        letter, _ = binary_to_letter_and_braille(cls_bin)
+
+        detections.append(
+            {
+                "letter": letter,
+                "x_center": (x1 + x2) / 2,
+                "y_center": (y1 + y2) / 2,
+            }
+        )
+
+    detections.sort(key=lambda d: (d["y_center"], d["x_center"]))
+    return detections
+
+
+# ? Group detections by line
+def group_by_line(detections: list[dict], y_threshold: int = 20) -> list[list[dict]]:
+    if not detections:
+        return []
+
+    lines = []
+    current_line = [detections[0]]
+
+    for det in detections[1:]:
+        if abs(det["y_center"] - current_line[-1]["y_center"]) < y_threshold:
+            current_line.append(det)
+        else:
+            lines.append(current_line)
+            current_line = [det]
+
+    lines.append(current_line)
+    return lines
+
+
+# ? Merge detections to text
+def marge_text(lines: list[list[dict]]) -> str:
+    text_lines = []
+    for line in lines:
+        line.sort(key=lambda d: d["x_center"])
+        text_lines.append("".join(d["letter"] for d in line))
+
+    return "\n".join(text_lines)
+
+
+# ? Function to convert image to text
+def image_braille_to_text(
+    file,
+    conf_threshold: float = 0.15,
+    iou_threshold: float = 0.15,
+    y_threshold: int = 20,
+) -> str:
+    try:
+        safe_filename = generate_unique_filename(file.filename)
+        temp_path = os.path.join("/tmp", safe_filename)
+        with open(temp_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+
+        detections = extract_detections(temp_path, conf_threshold, iou_threshold)
+        if not detections:
+            return ""
+
+        lines = group_by_line(detections, y_threshold)
+        final_text = marge_text(lines)
+
+        return final_text
+
+    except Exception as e:
+        raise RuntimeError(f"{Messages.EXCEPTION_DEFAULT}: {e}")

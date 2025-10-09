@@ -45,8 +45,20 @@ def upload_image_service(
     try:
         validate_file_extension(file.filename)
         validate_file_size(file)
-        img_bytes = image_braille_to_segmentation(file, conf_threshold, iou_threshold)
+        img_bytes = image_braille_to_text(file, conf_threshold, iou_threshold)
         return StreamingResponse(img_bytes, media_type="image/jpeg")
+    except Exception as e:
+        return error_response(f"{Messages.IMAGE_UPLOAD_ERROR}: {e}", status_code=500)
+
+
+def upload_image_service_to_text(
+    file: UploadFile, conf_threshold: float = 0.15, iou_threshold: float = 0.15
+):
+    try:
+        validate_file_extension(file.filename)
+        validate_file_size(file)
+        img_bytes = image_braille_to_text(file, conf_threshold, iou_threshold)
+        return success_response(img_bytes)
     except Exception as e:
         return error_response(f"{Messages.IMAGE_UPLOAD_ERROR}: {e}", status_code=500)
 
