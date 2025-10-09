@@ -20,6 +20,7 @@ from app.utils.file import (
     validate_file_extension,
     validate_file_size,
 )
+from app.utils.translate import binary_to_letter
 from app.models.inference import model
 
 NFS_PATH = os.getenv("NFS_PATH", "/")
@@ -42,41 +43,6 @@ def get_image_service(uuid: str):
 def upload_image_service(
     file: UploadFile, conf_threshold: float = 0.15, iou_threshold: float = 0.15
 ):
-
-    # Mapa binario → letra según tu vector
-    BINARY_TO_LETTER = {
-        "100000": "A",
-        "110000": "B",
-        "100100": "C",
-        "100110": "D",
-        "100010": "E",
-        "110100": "F",
-        "110110": "G",
-        "110010": "H",
-        "010100": "I",
-        "010110": "J",
-        "101000": "K",
-        "111000": "L",
-        "101100": "M",
-        "101110": "N",
-        "110111": "Ñ",
-        "101010": "O",
-        "111100": "P",
-        "111110": "Q",
-        "111010": "R",
-        "011100": "S",
-        "011110": "T",
-        "101001": "U",
-        "001111": "V",
-        "010111": "W",
-        "101101": "X",
-        "101111": "Y",
-        "101011": "Z",
-        "111001": "#",
-        "010000": ",",
-        "001000": ".",
-    }
-
     try:
         validate_file_extension(file.filename)
         validate_file_size(file)
@@ -108,7 +74,8 @@ def upload_image_service(
             cls_idx = int(box.cls.cpu().numpy())
             cls_bin = model.names[cls_idx].strip()
 
-            letter = BINARY_TO_LETTER.get(cls_bin, "?")
+            # 🔤 Solo usar binary_to_letter()
+            letter = binary_to_letter(cls_bin)
 
             # Dibujar rectángulo y texto
             text_label = f"{letter}"
@@ -127,6 +94,15 @@ def upload_image_service(
                 font_scale * 2,
                 font_color,
                 2,
+            )
+
+            vector_resultados.append(
+                {
+                    "binary": cls_bin,
+                    "letter": letter,
+                    "confidence": round(conf, 3),
+                    "bbox": [x1, y1, x2, y2],
+                }
             )
 
         # 4️⃣ Convertir imagen
