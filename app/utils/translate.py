@@ -147,7 +147,6 @@ def image_braille_to_segmentation(
         raise RuntimeError("{Messages.EXCEPTION_DEFAULT}: {e}")
 
 
-# ? Extract detections from image
 def extract_detections(temp_path: str, conf_threshold: float, iou_threshold: float):
     results = run_model_prediction(temp_path, conf_threshold, iou_threshold)
     boxes = results[0].boxes
@@ -174,7 +173,6 @@ def extract_detections(temp_path: str, conf_threshold: float, iou_threshold: flo
     return detections
 
 
-# ? Group detections by line
 def group_by_line(detections: list[dict], y_threshold: int = 20) -> list[list[dict]]:
     if not detections:
         return []
@@ -193,14 +191,36 @@ def group_by_line(detections: list[dict], y_threshold: int = 20) -> list[list[di
     return lines
 
 
-# ? Merge detections to text
-def marge_text(lines: list[list[dict]]) -> str:
+def merge_text(lines: list[list[dict]], space_factor: float = 1.8) -> str:
     text_lines = []
     for line in lines:
         line.sort(key=lambda d: d["x_center"])
-        text_lines.append("".join(d["letter"] for d in line))
+        letters = []
 
-    return "\n".join(text_lines)
+        if len(line) == 1:
+            letters.append(line[0]["letter"])
+        else:
+            distances = [
+                line[i + 1]["x_center"] - line[i]["x_center"]
+                for i in range(len(line) - 1)
+            ]
+            avg_distance = np.median(distances)
+
+            for i, det in enumerate(line):
+                letters.append(det["letter"])
+                if i < len(line) - 1:
+                    dx = line[i + 1]["x_center"] - det["x_center"]
+                    if dx > avg_distance * space_factor:
+                        letters.append(" ")
+
+        line_text = "".join(letters).replace("?", "*").lower()
+
+        if line_text.startswith("k") and len(line_text) > 1:
+            line_text = line_text[1].upper() + line_text[2:]
+
+        text_lines.append(line_text)
+
+    return " ".join(text_lines)
 
 
 # ? Function to convert image to text
@@ -221,7 +241,7 @@ def image_braille_to_text(
             return ""
 
         lines = group_by_line(detections, y_threshold)
-        final_text = marge_text(lines)
+        final_text = merge_text(lines)
 
         return final_text
 
