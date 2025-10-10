@@ -6,6 +6,7 @@ import shutil
 import numpy as np
 from PIL import Image
 from typing import List
+from datetime import datetime
 from fastapi import HTTPException, UploadFile
 from fastapi.responses import FileResponse, StreamingResponse
 
@@ -20,6 +21,7 @@ from app.utils.file import (
     validate_file_extension,
     validate_file_size,
 )
+from app.utils.pdf import text_to_pdf
 from app.utils.translate import image_braille_to_segmentation, image_braille_to_text
 
 NFS_PATH = os.getenv("NFS_PATH", "/")
@@ -99,4 +101,28 @@ def upload_batch_images_service(
             "failed_uploads": failed_uploads,
         },
         status_code=207,
+    )
+
+
+def upload_batch_images_to_pdf(
+    files: List[UploadFile], conf_threshold: float = 0.15, iou_threshold: float = 0.15
+):
+    text = ""
+
+    for file in files:
+        try:
+            validate_file_extension(file.filename)
+            validate_file_size(file)
+            text_converted = image_braille_to_text(file, conf_threshold, iou_threshold)
+            text += f"{text_converted}\n"
+
+        except Exception as e:
+            return error_response(f"{Messages.EXCEPTION_DEFAULT}: {e}", status_code=500)
+
+    current_date = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    pdf_bytes = text_to_pdf(text)
+    return StreamingResponse(
+        pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename={current_date}.pdf"},
     )

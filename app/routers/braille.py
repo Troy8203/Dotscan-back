@@ -10,6 +10,7 @@ from app.services.braille_service import (
     upload_image_service,
     upload_batch_images_service,
     upload_image_service_to_text,
+    upload_batch_images_to_pdf,
 )
 
 router = APIRouter(tags=["Braille"])
@@ -57,8 +58,8 @@ async def upload_batch_images(files: List[UploadFile] = File(...)):
     summary="API para subir múltiples imágenes en braille",
     description="Sube muchas imágenes y retorna un archivo pdf con los caracteres traducidos",
 )
-async def upload_batch_images(files: List[UploadFile] = File(...)):
-    return upload_batch_images_service(files)
+async def upload_batch_pdf(files: List[UploadFile] = File(...)):
+    return upload_batch_images_to_pdf(files)
 
 
 @router.post(

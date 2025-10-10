@@ -5,6 +5,7 @@ from difflib import get_close_matches
 spell = SpellChecker(language="es")
 
 
+# TODO: convert in english
 def corregir_comodin(palabra):
     palabra_lower = palabra.lower()
 
