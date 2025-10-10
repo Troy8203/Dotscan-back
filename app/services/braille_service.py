@@ -66,8 +66,10 @@ def upload_image_service_to_text(
         return error_response(f"{Messages.IMAGE_UPLOAD_ERROR}: {e}", status_code=500)
 
 
-def upload_batch_images_service(files: List[UploadFile]):
-    results = []
+def upload_batch_images_service(
+    files: List[UploadFile], conf_threshold: float = 0.15, iou_threshold: float = 0.15
+):
+    results = ""
     successful_uploads = 0
     failed_uploads = 0
 
@@ -75,49 +77,26 @@ def upload_batch_images_service(files: List[UploadFile]):
         try:
             validate_file_extension(file.filename)
             file_size = validate_file_size(file)
-
-            safe_filename = generate_unique_filename(file.filename)
-            file_path = os.path.join(NFS_PATH, safe_filename)
-
-            with open(file_path, "wb") as buffer:
-                shutil.copyfileobj(file.file, buffer)
-
-            results.append(
-                {
-                    "filename": safe_filename,
-                    "original_name": file.filename,
-                    "file_size": file_size,
-                    "content_type": file.content_type,
-                    "url": f"/images/{safe_filename}",
-                    "status": "success",
-                    "message": "Imagen subida correctamente",
-                }
-            )
+            text_converted = image_braille_to_text(file, conf_threshold, iou_threshold)
+            results += f"{text_converted}\n"
             successful_uploads += 1
 
         except HTTPException as e:
-            results.append(
-                {"filename": file.filename, "status": "error", "message": e.detail}
-            )
             failed_uploads += 1
 
         except Exception as e:
-            results.append(
-                {
-                    "filename": file.filename,
-                    "status": "error",
-                    "message": f"Error al guardar la imagen: {str(e)}",
-                }
-            )
             failed_uploads += 1
+            return error_response(
+                f"{Messages.IMAGE_UPLOAD_ERROR}: {e}", status_code=500
+            )
 
     return success_response(
         message=Messages.IMAGE_UPLOAD_BATCH_SUCCESS,
         data={
+            "text": results,
             "total_files": len(files),
             "successful_uploads": successful_uploads,
             "failed_uploads": failed_uploads,
-            "results": results,
         },
         status_code=207,
     )
