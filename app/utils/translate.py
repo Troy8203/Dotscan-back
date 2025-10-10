@@ -10,6 +10,7 @@ from app.core.messages import Messages
 
 # Utils
 from app.utils.file import generate_unique_filename
+from app.utils.text import clean_text_spell
 
 # Models
 from app.models.inference import model
@@ -38,14 +39,19 @@ BINARY_TO_LETTER = {
     "011100": "S",
     "011110": "T",
     "101001": "U",
-    "001111": "V",
+    "111001": "V",
     "010111": "W",
     "101101": "X",
     "101111": "Y",
     "101011": "Z",
-    "111001": "#",
+    "001111": "#",
     "010000": ",",
     "001000": ".",
+    "111011": "Á",
+    "011101": "É",
+    "001100": "Í",
+    "001101": "Ó",
+    "011111": "Ú",
 }
 
 
@@ -74,6 +80,7 @@ def draw_braille_detections(
     bg_color=(245, 166, 35),
     thickness=2,
     font_scale=0.35,
+    show_confidence=False,
 ):
 
     img = np.array(Image.open(image_path).convert("RGB"))
@@ -95,7 +102,9 @@ def draw_braille_detections(
         cv2.rectangle(img, (x1, y1), (x2, y2), border_color, thickness)
 
         # ? Add tag
-        text_label = f"{letter}"
+        text_label = "{} {}".format(
+            letter, str(round(conf, 3)) if show_confidence else letter
+        )
         (text_w, text_h), _ = cv2.getTextSize(
             text_label, cv2.FONT_HERSHEY_SIMPLEX, font_scale * 2, 2
         )
@@ -140,7 +149,9 @@ def image_braille_to_segmentation(
             shutil.copyfileobj(file.file, buffer)
 
         results = run_model_prediction(temp_path, conf_threshold, iou_threshold)
-        img_bytes, _ = draw_braille_detections(temp_path, results)
+        img_bytes, _ = draw_braille_detections(
+            temp_path, results, show_confidence=False
+        )
         return img_bytes
 
     except Exception as e:
@@ -205,12 +216,16 @@ def merge_text(lines: list[list[dict]], space_factor: float = 1.8) -> str:
                 for i in range(len(line) - 1)
             ]
             avg_distance = np.median(distances)
+            avg10percent = avg_distance * 0.1
 
             for i, det in enumerate(line):
                 letters.append(det["letter"])
                 if i < len(line) - 1:
                     dx = line[i + 1]["x_center"] - det["x_center"]
-                    if dx > avg_distance * space_factor:
+                    if (
+                        dx > (avg_distance + avg10percent) * space_factor
+                        or dx > (avg_distance - avg10percent) * space_factor
+                    ):
                         letters.append(" ")
 
         line_text = "".join(letters).replace("?", "*").lower()
@@ -240,8 +255,9 @@ def image_braille_to_text(
         if not detections:
             return ""
 
+        # TODO: solve problems with ñ, uppercase, pq, v#, nm
         lines = group_by_line(detections, y_threshold)
-        final_text = merge_text(lines)
+        final_text = clean_text_spell(merge_text(lines))
 
         return final_text
 
