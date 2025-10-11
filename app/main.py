@@ -4,10 +4,10 @@ from fastapi.openapi.utils import get_openapi
 from dotenv import load_dotenv
 
 # Core
+from app.routers import health, images, braille
 from app.core import setup_logging, log_responses_middleware
-from app.routers import images, braille
 
-# Configurar logging primero
+# Config Logger
 setup_logging()
 
 load_dotenv()
@@ -25,9 +25,13 @@ app = FastAPI(
 # Middleware
 app.middleware("http")(log_responses_middleware)
 
+# Tags
+PREFIX = "/api"
+
 # Routers
-app.include_router(images.router, prefix="/images", tags=["Images"])
-app.include_router(braille.router, prefix="/braille", tags=["Braille"])
+app.include_router(health.router, prefix=f"{PREFIX}", tags=["Health"])
+# app.include_router(images.router, prefix=f"{PREFIX}/images", tags=["Images"])
+app.include_router(braille.router, prefix=f"{PREFIX}/braille", tags=["Braille"])
 
 
 def custom_openapi():

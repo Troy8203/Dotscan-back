@@ -17,6 +17,7 @@ class Messages(str, Enum):
     THROTTLER_EXCEPTION = "Límite de solicitudes superado. Intente más tarde por favor."
 
     # Mensajes de éxito
+    SUCCESS_SERVICE = "Servicio ejecutado exitosamente."
     SUCCESS_OPERATION = "Operación completada exitosamente."
     SUCCESS_CREATED = "Recurso creado exitosamente."
     SUCCESS_UPDATED = "Recurso actualizado exitosamente."
