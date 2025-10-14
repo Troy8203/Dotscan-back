@@ -15,7 +15,7 @@ from app.core.messages import Messages
 
 # Utils
 from app.utils.file import validate_file_extension, validate_file_size
-from app.utils.text_image import image_text_to_segmentation, image_text_to_text
+from app.utils.text_tools import image_text_to_segmentation, image_text_to_text
 
 
 def upload_image_service(

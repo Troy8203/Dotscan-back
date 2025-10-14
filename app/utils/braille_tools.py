@@ -10,7 +10,7 @@ from app.core.messages import Messages
 
 # Utils
 from app.utils.file import generate_unique_filename
-from app.utils.text import clean_text_spell
+from app.utils.text_format import clean_text_spell
 
 # Models
 from app.models.predictor_braille import run_model_prediction, BINARY_TO_LETTER

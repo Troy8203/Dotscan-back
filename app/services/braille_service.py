@@ -22,7 +22,7 @@ from app.utils.file import (
     validate_file_size,
 )
 from app.utils.pdf import text_to_pdf
-from app.utils.translate import image_braille_to_segmentation, image_braille_to_text
+from app.utils.braille_tools import image_braille_to_segmentation, image_braille_to_text
 
 NFS_PATH = os.getenv("NFS_PATH", "/")
 
