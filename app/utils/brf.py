@@ -1,4 +1,5 @@
 import subprocess
+import io
 
 
 def translate_to_brf_content(text: str) -> str:
@@ -25,3 +26,13 @@ def text_to_ascii_braille(text: str) -> str:
     )
 
     return result.stdout.strip()
+
+
+def text_to_brf_file(text: str):
+    brf_content = translate_to_brf_content(text)
+
+    brf_bytes = io.BytesIO()
+    brf_bytes.write(brf_content.encode("utf-8"))
+    brf_bytes.seek(0)
+
+    return brf_bytes

@@ -5,7 +5,6 @@ from difflib import get_close_matches
 spell = SpellChecker(language="es")
 
 
-# TODO: convert in english
 def correct_text(text):
     word_lower = text.lower()
 

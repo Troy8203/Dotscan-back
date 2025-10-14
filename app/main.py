@@ -31,8 +31,8 @@ PREFIX = "/api"
 # Routers
 app.include_router(health.router, prefix=f"{PREFIX}", tags=["Health"])
 # app.include_router(images.router, prefix=f"{PREFIX}/images", tags=["Images"])
-app.include_router(braille.router, prefix=f"{PREFIX}/braille", tags=["Braille"])
-app.include_router(text.router, prefix=f"{PREFIX}/text", tags=["Text"])
+app.include_router(braille.router, prefix=f"{PREFIX}/braille-to-text", tags=["Braille"])
+app.include_router(text.router, prefix=f"{PREFIX}/text-to-braille", tags=["Text"])
 
 
 def custom_openapi():
