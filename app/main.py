@@ -4,7 +4,7 @@ from fastapi.openapi.utils import get_openapi
 from dotenv import load_dotenv
 
 # Core
-from app.routers import health, images, braille
+from app.routers import health, images, braille, text
 from app.core import setup_logging, log_responses_middleware
 
 # Config Logger
@@ -32,6 +32,7 @@ PREFIX = "/api"
 app.include_router(health.router, prefix=f"{PREFIX}", tags=["Health"])
 # app.include_router(images.router, prefix=f"{PREFIX}/images", tags=["Images"])
 app.include_router(braille.router, prefix=f"{PREFIX}/braille", tags=["Braille"])
+app.include_router(text.router, prefix=f"{PREFIX}/text", tags=["Text"])
 
 
 def custom_openapi():
