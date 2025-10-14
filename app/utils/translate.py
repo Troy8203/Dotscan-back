@@ -13,46 +13,7 @@ from app.utils.file import generate_unique_filename
 from app.utils.text import clean_text_spell
 
 # Models
-from app.models.inference import model
-from app.models.predictor import run_model_prediction
-
-BINARY_TO_LETTER = {
-    "100000": "A",
-    "110000": "B",
-    "100100": "C",
-    "100110": "D",
-    "100010": "E",
-    "110100": "F",
-    "110110": "G",
-    "110010": "H",
-    "010100": "I",
-    "010110": "J",
-    "101000": "K",
-    "111000": "L",
-    "101100": "M",
-    "101110": "N",
-    "110111": "Ñ",
-    "101010": "O",
-    "111100": "P",
-    "111110": "Q",
-    "111010": "R",
-    "011100": "S",
-    "011110": "T",
-    "101001": "U",
-    "111001": "V",
-    "010111": "W",
-    "101101": "X",
-    "101111": "Y",
-    "101011": "Z",
-    "001111": "#",
-    "010000": ",",
-    "001000": ".",
-    "111011": "Á",
-    "011101": "É",
-    "001100": "Í",
-    "001101": "Ó",
-    "011111": "Ú",
-}
+from app.models.predictor_braille import run_model_prediction, BINARY_TO_LETTER
 
 
 def binary_to_letter(binary_code: str) -> str:
