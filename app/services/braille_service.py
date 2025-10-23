@@ -22,6 +22,7 @@ from app.utils.file import (
     validate_file_size,
 )
 from app.utils.pdf import text_to_pdf
+from app.utils.brf import text_to_ascii_braille
 from app.utils.braille_tools import image_braille_to_segmentation, image_braille_to_text
 
 NFS_PATH = os.getenv("NFS_PATH", "/")
@@ -92,10 +93,13 @@ def upload_batch_images_service(
                 f"{Messages.IMAGE_UPLOAD_ERROR}: {e}", status_code=500
             )
 
+    braille = text_to_ascii_braille(text_converted)
+
     return success_response(
         message=Messages.IMAGE_UPLOAD_BATCH_SUCCESS,
         data={
             "text": results,
+            "braille": braille,
             "total_files": len(files),
             "successful_uploads": successful_uploads,
             "failed_uploads": failed_uploads,

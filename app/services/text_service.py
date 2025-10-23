@@ -2,12 +2,13 @@ import os
 import io
 import shutil
 import numpy as np
+import cv2
+import pytesseract  # ⚠️ FALTABA ESTA IMPORTACIÓN
 from PIL import Image
 from typing import List
 from datetime import datetime
 from fastapi import HTTPException, UploadFile
 from fastapi.responses import FileResponse, StreamingResponse
-
 
 # Core
 from app.core.utils import success_response, error_response
@@ -16,36 +17,40 @@ from app.core.messages import Messages
 # Utils
 from app.utils.brf import text_to_ascii_braille, text_to_brf_file
 from app.utils.file import validate_file_extension, validate_file_size
-from app.utils.text_tools import image_text_to_segmentation, image_text_to_text
+from app.utils.text_tools import image_text_to_text, image_text_to_segmentation
 
 
-def upload_image_service(
-    file: UploadFile,
-    conf_threshold: float = 0.001,
-    iou_threshold: float = 0.15,
-):
+def upload_image_service(file: UploadFile):
     try:
         validate_file_extension(file.filename)
         validate_file_size(file)
 
-        img_bytes = image_text_to_segmentation(file, conf_threshold, iou_threshold)
+        img_bytes = image_text_to_segmentation(
+            file, conf_threshold=0.001, confidence_threshold=30
+        )
+
         return StreamingResponse(img_bytes, media_type="image/jpeg")
 
     except Exception as e:
-        return error_response(f"{Messages.IMAGE_UPLOAD_ERROR}: {e}", status_code=500)
+        return {"error": f"Error procesando imagen: {e}"}
 
 
 def upload_image_service_to_text(
     file: UploadFile,
     conf_threshold: float = 0.001,
-    iou_threshold: float = 0.15,
-    y_threshold: int = 20,
+    confidence_threshold: int = 30,
+    lang: str = "spa",
 ):
     try:
         validate_file_extension(file.filename)
         validate_file_size(file)
 
-        response = image_text_to_text(file, conf_threshold, iou_threshold, y_threshold)
+        response = image_text_to_text(
+            file,
+            conf_threshold=conf_threshold,
+            confidence_threshold=confidence_threshold,
+            lang=lang,
+        )
 
         return success_response(
             message=Messages.SUCCESS_OPERATION,
@@ -59,9 +64,10 @@ def upload_image_service_to_text(
 def upload_batch_images_service(
     files: List[UploadFile],
     conf_threshold: float = 0.001,
-    iou_threshold: float = 0.15,
-    y_threshold: int = 20,
+    confidence_threshold: int = 30,
+    lang: str = "spa",
 ):
+    text = ""
     results = ""
     successful_uploads = 0
     failed_uploads = 0
@@ -71,10 +77,15 @@ def upload_batch_images_service(
             validate_file_extension(file.filename)
             validate_file_size(file)
             text_converted = image_text_to_text(
-                file, conf_threshold, iou_threshold, y_threshold
+                file,
+                conf_threshold=conf_threshold,
+                confidence_threshold=confidence_threshold,
+                lang=lang,
             )
 
             results += f"{text_to_ascii_braille(text_converted)}\n"
+            text += f"{text_converted}\n"
+
             successful_uploads += 1
 
         except HTTPException as e:
@@ -89,7 +100,8 @@ def upload_batch_images_service(
     return success_response(
         message=Messages.IMAGE_UPLOAD_BATCH_SUCCESS,
         data={
-            "text": results,
+            "text": text,
+            "braille": results,
             "total_files": len(files),
             "successful_uploads": successful_uploads,
             "failed_uploads": failed_uploads,
@@ -101,8 +113,8 @@ def upload_batch_images_service(
 def upload_batch_images_to_brf(
     files: List[UploadFile],
     conf_threshold: float = 0.001,
-    iou_threshold: float = 0.15,
-    y_threshold: int = 20,
+    confidence_threshold: int = 30,
+    lang: str = "spa",
 ):
     text = ""
 
@@ -111,7 +123,10 @@ def upload_batch_images_to_brf(
             validate_file_extension(file.filename)
             validate_file_size(file)
             text_converted = image_text_to_text(
-                file, conf_threshold, iou_threshold, y_threshold
+                file,
+                conf_threshold=conf_threshold,
+                confidence_threshold=confidence_threshold,
+                lang=lang,
             )
             text += f"{text_converted}\n"
 
