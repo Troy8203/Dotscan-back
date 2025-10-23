@@ -59,6 +59,7 @@ pydantic_core==2.33.2
 Pygments==2.19.2
 pyparsing==3.2.5
 pyspellchecker==0.8.3
+pytesseract==0.3.13
 python-dateutil==2.9.0.post0
 python-dotenv==1.1.1
 python-multipart==0.0.20
