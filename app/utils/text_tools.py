@@ -4,12 +4,13 @@ import shutil
 import numpy as np
 import cv2
 import pytesseract
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 
 # Core
 from app.core.messages import Messages
 
 # Utils
+from app.utils.brf import text_to_ascii_braille
 from app.utils.file import generate_unique_filename
 
 
@@ -20,14 +21,21 @@ def draw_text_detections(
     font_color=(255, 255, 255),
     bg_color=(245, 166, 35),
     thickness=2,
-    font_scale=0.35,
+    font_size=16,
     show_confidence=False,
+    show_braille=True,
 ):
-    img = np.array(Image.open(image_path).convert("RGB"))
+    img_pil = Image.open(image_path).convert("RGB")
+    draw = ImageDraw.Draw(img_pil)
+
+    try:
+        font = ImageFont.truetype("fonts/DejaVuSans.ttf", font_size)
+    except:
+        font = ImageFont.load_default()
 
     custom_config = r"--oem 3 --psm 6"
     data = pytesseract.image_to_data(
-        img, config=custom_config, output_type=pytesseract.Output.DICT
+        np.array(img_pil), config=custom_config, output_type=pytesseract.Output.DICT
     )
 
     detections = []
@@ -43,41 +51,42 @@ def draw_text_detections(
             text = data["text"][i].strip()
 
             if text:
-                # ? Draw a rectangle
-                cv2.rectangle(img, (x, y), (x + w, y + h), border_color, thickness)
+                img_np = np.array(img_pil)
+                cv2.rectangle(img_np, (x, y), (x + w, y + h), border_color, thickness)
+                img_pil = Image.fromarray(img_np)
+                draw = ImageDraw.Draw(img_pil)
 
-                # ? CORRECCIÓN: Evitar repetir la palabra
-                text_label = (
-                    "{}%".format(int(data["conf"][i])) if show_confidence else text
-                )
+                if show_braille:
+                    braille_text = text_to_ascii_braille(text)
+                    display_text = f"{braille_text}"
+                else:
+                    display_text = text
 
-                (text_w, text_h), _ = cv2.getTextSize(
-                    text_label, cv2.FONT_HERSHEY_SIMPLEX, font_scale * 2, 2
-                )
-                cv2.rectangle(
-                    img, (x, y - text_h - 6), (x + text_w + 4, y), bg_color, -1
-                )
-                cv2.putText(
-                    img,
-                    text_label,
-                    (x + 2, y - 4),
-                    cv2.FONT_HERSHEY_SIMPLEX,
-                    font_scale * 2,
-                    font_color,
-                    2,
+                if show_confidence:
+                    display_text = f"{display_text} {int(data['conf'][i])}%"
+
+                bbox = draw.textbbox((0, 0), display_text, font=font)
+                text_w, text_h = bbox[2] - bbox[0], bbox[3] - bbox[1]
+
+                draw.rectangle([x, y - text_h - 6, x + text_w + 4, y], fill=bg_color)
+
+                draw.text(
+                    (x + 2, y - text_h - 2), display_text, font=font, fill=font_color
                 )
 
                 detections.append(
                     {
                         "text": text,
+                        "braille": (
+                            text_to_ascii_braille(text) if show_braille else None
+                        ),
                         "confidence": int(data["conf"][i]),
                         "bbox": [x, y, w, h],
                     }
                 )
 
-    pil_img = Image.fromarray(img)
     img_bytes = io.BytesIO()
-    pil_img.save(img_bytes, format="JPEG")
+    img_pil.save(img_bytes, format="JPEG")
     img_bytes.seek(0)
 
     return img_bytes, detections
@@ -98,7 +107,10 @@ def image_text_to_segmentation(
             shutil.copyfileobj(file.file, buffer)
 
         img_bytes, _ = draw_text_detections(
-            temp_path, confidence_threshold, show_confidence=False
+            temp_path,
+            confidence_threshold,
+            show_confidence=False,
+            show_braille=True,
         )
         return img_bytes
 
