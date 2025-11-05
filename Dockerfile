@@ -1,6 +1,5 @@
 FROM python:3.11-slim
 
-# Instalar dependencias necesarias del sistema
 RUN apt-get update && apt-get install -y --no-install-recommends \
     liblouis-bin \
     liblouis-dev \
@@ -10,7 +9,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxext6 \
     libxrender1 \
     tesseract-ocr \
+    tesseract-ocr-spa \
  && rm -rf /var/lib/apt/lists/*
+
+ENV TESSDATA_PREFIX=/usr/share/tesseract-ocr/5/tessdata
 
 WORKDIR /app
 
