@@ -1,16 +1,16 @@
 FROM python:3.11-slim
 
-RUN apt-get update && \
-    apt-get install -y \
-        liblouis-bin \
-        liblouis-dev \
-        libgl1 \
-        libglib2.0-0 \
-        libsm6 \
-        libxext6 \
-        libxrender1 \
-        tesseract-ocr && \
-    rm -rf /var/lib/apt/lists/*
+# Instalar dependencias necesarias del sistema
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    liblouis-bin \
+    liblouis-dev \
+    libgl1 \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender1 \
+    tesseract-ocr \
+ && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
