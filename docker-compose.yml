@@ -1,0 +1,12 @@
+# version: "3"
+
+services:
+  k6:
+    image: grafana/k6:latest
+    env_file:
+      - .env
+    volumes:
+      - ./test/k6/scripts:/scripts
+      - ./test/k6/results:/results
+    working_dir: /scripts
+    command: run smoke-test.js --out json=/results/smoke.json
