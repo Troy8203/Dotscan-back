@@ -72,7 +72,7 @@ function sendRequest(file, filename) {
 
 export function handleSummary(data) {
   return {
-    "/results/braille_test.html": htmlReport(data, { debug: false }),
+    "/results/resumen_braille_detect.html": htmlReport(data, { debug: false }),
     stdout: textSummary(data, { indent: " ", enableColors: true }),
   };
 }

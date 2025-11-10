@@ -5,9 +5,9 @@ import { textSummary } from "https://jslib.k6.io/k6-summary/0.0.1/index.js";
 
 const BASE_URL = `http://${__ENV.HOST || "localhost"}:${__ENV.PORT || 8080}`;
 
-const basic_image = open("/scripts/assets/braille_basic.jpg", "b");
-const length_image = open("/scripts/assets/braille_lenght.jpg", "b");
-const weight_image = open("/scripts/assets/braille_weight.jpg", "b");
+const basic_image = open("/scripts/assets/text_basic.jpg", "b");
+const length_image = open("/scripts/assets/text_lenght.jpg", "b");
+const weight_image = open("/scripts/assets/text_weight.jpg", "b");
 
 export const options = {
   scenarios: {
@@ -46,21 +46,21 @@ export const options = {
 };
 
 export function smokeTest() {
-  sendRequest([basic_image], ["braille_basic.jpg"]);
+  sendRequest([basic_image], ["text_basic.jpg"]);
 }
 
 export function loadTest() {
-  sendRequest([length_image], ["braille_lenght.jpg"]);
+  sendRequest([length_image], ["text_lenght.jpg"]);
 }
 
 export function stressTest() {
-  sendRequest([weight_image], ["braille_weight.jpg"]);
+  sendRequest([weight_image], ["text_weight.jpg"]);
 }
 
 export function spikeTest() {
   sendRequest(
     [basic_image, length_image, weight_image],
-    ["braille_basic.jpg", "braille_lenght.jpg", "braille_weight.jpg"]
+    ["text_basic.jpg", "text_lenght.jpg", "text_weight.jpg"]
   );
 }
 
@@ -71,7 +71,7 @@ function sendRequest(files, filenames) {
     data[`files${i === 0 ? "" : i}`] = http.file(f, filenames[i], "image/jpeg");
   });
 
-  const res = http.post(`${BASE_URL}/api/braille-to-text/text`, data);
+  const res = http.post(`${BASE_URL}/api/text-to-text/text`, data);
 
   check(res, { "status is 200": (r) => r.status === 200 });
   sleep(1);
@@ -79,7 +79,7 @@ function sendRequest(files, filenames) {
 
 export function handleSummary(data) {
   return {
-    "/results/reporte_braille_text.html": htmlReport(data, { debug: false }),
+    "/results/reporte_text_text.html": htmlReport(data, { debug: false }),
     stdout: textSummary(data, { indent: " ", enableColors: true }),
   };
 }
