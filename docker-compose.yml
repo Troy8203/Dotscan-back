@@ -8,5 +8,6 @@ services:
     volumes:
       - ./test/k6/scripts:/scripts
       - ./test/k6/results:/results
+      - ./test/k6/assets:/scripts/assets
     working_dir: /scripts
     command: run smoke-test.js --out json=/results/smoke.json
