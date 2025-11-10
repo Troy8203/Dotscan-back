@@ -44,3 +44,6 @@ __pypackages__/
 
 # FastAPI / Uvicorn
 *.pid
+
+# Report of results
+test/k6/results
