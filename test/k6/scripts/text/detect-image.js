@@ -5,41 +5,34 @@ import { textSummary } from "https://jslib.k6.io/k6-summary/0.0.1/index.js";
 
 const BASE_URL = `http://${__ENV.HOST || "localhost"}:${__ENV.PORT || 8080}`;
 
-const basic_image = open("/scripts/assets/text_basic.jpg", "b");
+const basic_image = open("/scripts/assets/braille_basic.jpg", "b");
 
 export const options = {
   scenarios: {
     smokeTest: {
       executor: "constant-vus",
       vus: 1,
-      duration: "5s",
+      duration: "30s",
       exec: "smokeTest",
     },
-    loadTest: {
-      executor: "constant-vus",
-      vus: 5,
-      duration: "15s",
-      exec: "loadTest",
-    },
-    stressTest: {
+    gradualLoad: {
       executor: "ramping-vus",
       startVUs: 1,
       stages: [
-        { duration: "10s", target: 10 },
-        { duration: "10s", target: 20 },
-        { duration: "10s", target: 5 },
+        { duration: "30s", target: 5 },
+        { duration: "1m", target: 20 },
+        { duration: "2m", target: 40 },
+        { duration: "2m", target: 50 }, // máximo recomendado
+        { duration: "1m", target: 50 }, // mantener carga
+        { duration: "1m", target: 0 }, // rampa de bajada
       ],
       exec: "stressTest",
+      gracefulRampDown: "30s",
     },
-    spikeTest: {
-      executor: "ramping-vus",
-      startVUs: 1,
-      stages: [
-        { duration: "5s", target: 20 },
-        { duration: "10s", target: 1 },
-      ],
-      exec: "spikeTest",
-    },
+  },
+  thresholds: {
+    http_req_failed: ["rate<0.05"],
+    http_req_duration: ["p(95)<5000"], // CORREGIDO: usar p(95) en lugar de p95
   },
 };
 
