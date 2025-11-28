@@ -38,12 +38,3 @@ class Messages(str, Enum):
     VALIDATION_INVALID_EMAIL = "El formato del email es inválido."
     VALIDATION_INVALID_UUID = "El formato del UUID es inválido."
     VALIDATION_FILE_REQUIRED = "Se requiere un archivo."
-
-    @classmethod
-    def get_message(cls, key: str, default: str = None) -> str:
-        """Obtener mensaje por clave con valor por defecto"""
-        return (
-            getattr(cls, key, default)
-            if default
-            else getattr(cls, key, cls.EXCEPTION_DEFAULT)
-        )

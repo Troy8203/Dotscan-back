@@ -1,9 +1,6 @@
 from typing import List
 from fastapi import APIRouter, UploadFile, File, Depends
 
-# Schemas
-from app.schemas.braille import UuidBraille
-
 # Services
 from app.services.text_service import (
     upload_image_service,
