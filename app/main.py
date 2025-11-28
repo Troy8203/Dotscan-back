@@ -4,7 +4,7 @@ from fastapi.openapi.utils import get_openapi
 from dotenv import load_dotenv
 
 # Core
-from app.routers import health, images, braille, text
+from app.routers import health, braille, text
 from app.core import setup_logging, log_responses_middleware
 
 # Config Logger

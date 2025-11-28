@@ -22,15 +22,6 @@ async def upload_image(file: UploadFile = File(...)):
 
 
 @router.post(
-    "/texto-test",
-    summary="API para traducir una imagen a texto convencional",
-    description="Sube una imagen y retorna una imagen con los caracteres traducidos",
-)
-async def upload_image(file: UploadFile = File(...)):
-    return upload_image_service_to_text(file)
-
-
-@router.post(
     "/text",
     summary="API para subir múltiples imágenes en texto convencional",
     description="Sube muchas imágenes y retorna un texto con los caracteres traducidos",
