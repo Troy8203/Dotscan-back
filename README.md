@@ -27,12 +27,12 @@ Asegúrese de tener lo siguiente instalado en su sistema:
 
 - [Docker](https://www.docker.com/get-started)
 
-### Instalación
+### Instalación rapida
 
 1.  Clone el repositorio (si aún no lo ha hecho):
 
     ```bash
-    git clone <repository-url> # Reemplace con la URL de su repositorio
+    git clone https://github.com/Troy8203/Dotscan-back.git
     cd dotscan-backend
     ```
 
@@ -54,41 +54,23 @@ Asegúrese de tener lo siguiente instalado en su sistema:
     docker run -p 8080:8080 dotscan-backend
     ```
 
-    Este comando iniciará la aplicación FastAPI, mapeando el puerto 8080 del contenedor al puerto 8080 de su host.
-
-## Acceso a los Servicios
-
-La API de Backend de DotScan será accesible en `http://localhost:8080`.
-
-- **URL Base**: `http://localhost:8080/api`
-
-### Endpoints
-
-- **Verificación de Salud**: `http://localhost:8080/api/health`
-- **Braille a Texto**: `http://localhost:8080/api/braille-to-text` (solicitudes POST)
-- **Texto a Braille**: `http://localhost:8080/api/text-to-braille` (solicitudes POST)
-
-Puede ver la documentación interactiva de la API (Swagger UI) en `http://localhost:8080/docs`.
+    Este comando iniciará la aplicación FastAPI, en el puerto 8080, y puede acceder a la documentación de la API en `http://localhost:8080/docs`.
 
 ## Estructura del Proyecto
 
 ```
 .
-├── 📄 .env.template            # Ejemplo de variables de entorno
-├── 📄 Dockerfile               # Configuración de Docker para la aplicación
-├── 📄 README.md                # Documentación del proyecto
-├── 📄 requirements.txt         # Dependencias de Python
-├── 📄 run.py                   # Punto de entrada para la aplicación
 ├── 📁 app/                     # Código fuente principal de la aplicación
-│   ├── 📄 main.py              # Configuración de la aplicación FastAPI
 │   ├── 📁 core/                # Utilidades, registro y seguridad
 │   ├── 📁 models/              # Modelos de aprendizaje automático y lógica de inferencia
 │   ├── 📁 routers/             # Definiciones de endpoints de la API
 │   ├── 📁 services/            # Lógica de negocio para los endpoints
 │   └── 📁 utils/               # Funciones de ayuda
-└── 📁 test/                    # Pruebas y activos de prueba
+│   ├── 📄 main.py              # Configuración de la aplicación FastAPI
+└── 📁 test/                    # Pruebas de carga
+├── 📄 .env.template            # Ejemplo de variables de entorno
+├── 📄 Dockerfile               # Configuración de Docker para la aplicación
+├── 📄 README.md                # Documentación del proyecto
+├── 📄 requirements.txt         # Dependencias de Python
+├── 📄 run.py                   # Punto de entrada para la aplicación
 ```
-
-## Licencia
-
-Este proyecto no tiene licencia (UNLICENSED).
