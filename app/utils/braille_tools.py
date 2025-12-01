@@ -3,7 +3,7 @@ import os
 import shutil
 import numpy as np
 import cv2
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 
 # Core
 from app.core.messages import Messages
@@ -42,12 +42,19 @@ def draw_braille_detections(
     thickness=2,
     show_confidence=True,
 ):
-
-    img = np.array(Image.open(image_path).convert("RGB"))
+    img = Image.open(image_path).convert("RGB")
+    draw = ImageDraw.Draw(img)
     vector_resultados = []
 
     boxes = results[0].boxes
     model_names = results[0].names
+
+    # ? If there are no detections
+    if len(boxes) == 0:
+        img_bytes = io.BytesIO()
+        img.save(img_bytes, format="JPEG")
+        img_bytes.seek(0)
+        return img_bytes, vector_resultados
 
     mean_width = 0
     mean_height = 0
@@ -59,9 +66,15 @@ def draw_braille_detections(
 
     mean_width /= len(boxes)
     mean_height /= len(boxes)
-    font_scale = mean_width / 32
-    thickness = int(mean_width / 5)
-    font_weight = min(int(mean_width / 6), 2)
+
+    # ? Dinamic font size
+    font_size = max(mean_width * 0.8, 10)
+    border_thickness = max(int(mean_width / 8), 1)
+
+    try:
+        font = ImageFont.truetype("fonts/DejaVuSans.ttf", font_size)
+    except:
+        font = ImageFont.load_default()
 
     for box in boxes:
         xyxy = box.xyxy[0].cpu().numpy()
@@ -72,27 +85,28 @@ def draw_braille_detections(
         cls_bin = model_names[cls_idx].strip()
         letter, braille_char = binary_to_letter_and_braille(cls_bin)
 
-        # ? Draw a rectangle
-        cv2.rectangle(img, (x1, y1), (x2, y2), border_color, thickness)
+        # ? Draw a rectangle (con PIL)
+        draw.rectangle(
+            [x1, y1, x2, y2],
+            outline=border_color,
+            width=border_thickness,
+        )
 
         # ? Add tag
-        text_label = (
-            letter
-            if not show_confidence
-            else f"{letter} {round(conf, 3)}" if show_confidence else letter
-        )
-        (text_w, text_h), _ = cv2.getTextSize(
-            text_label, cv2.FONT_HERSHEY_SIMPLEX, font_scale, 2
-        )
-        cv2.rectangle(img, (x1, y1 - text_h - 6), (x1 + text_w + 4, y1), bg_color, -1)
-        cv2.putText(
-            img,
+        text_label = letter if not show_confidence else f"{letter} {round(conf, 3)}"
+
+        bbox = draw.textbbox((0, 0), text_label, font=font)
+        text_w = bbox[2] - bbox[0]
+        text_h = bbox[3] - bbox[1]
+
+        # ? Draw boxes and text
+        draw.rectangle([x1, y1 - int(mean_height * 0.5) - 10, x2, y1], fill=bg_color)
+        text_x = x1 + ((x2 - x1) - text_w) // 2
+        draw.text(
+            (text_x, y1 - int(mean_height * 0.5) - 8),
             text_label,
-            (x1 + 2, y1 - 4),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            font_scale,
-            font_color,
-            font_weight,
+            font=font,
+            fill=font_color,
         )
 
         vector_resultados.append(
@@ -106,9 +120,8 @@ def draw_braille_detections(
         )
 
     # ? Save image
-    pil_img = Image.fromarray(img)
     img_bytes = io.BytesIO()
-    pil_img.save(img_bytes, format="JPEG")
+    img.save(img_bytes, format="JPEG")
     img_bytes.seek(0)
 
     return img_bytes, vector_resultados
