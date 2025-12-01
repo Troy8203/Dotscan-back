@@ -18,75 +18,97 @@ def draw_text_detections(
     image_path: str,
     confidence_threshold: int = 30,
     border_color=(245, 166, 35),
-    font_color=(255, 255, 255),
+    font_color=(117, 44, 18),
     bg_color=(245, 166, 35),
     thickness=2,
     font_size=16,
     show_confidence=False,
     show_braille=True,
 ):
-    img_pil = Image.open(image_path).convert("RGB")
-    draw = ImageDraw.Draw(img_pil)
+    img = Image.open(image_path).convert("RGB")
+    draw = ImageDraw.Draw(img)
+    detections = []
+
+    custom_config = r"--oem 3 --psm 6"
+    data = pytesseract.image_to_data(
+        np.array(img), config=custom_config, output_type=pytesseract.Output.DICT
+    )
+
+    valid_detections = []
+    mean_width = 0
+    mean_height = 0
+    count = 0
+
+    for i in range(len(data["level"])):
+        if int(data["conf"][i]) > confidence_threshold:
+            text = data["text"][i].strip()
+            if text:
+                w, h = data["width"][i], data["height"][i]
+                mean_width += w
+                mean_height += h
+                count += 1
+                valid_detections.append(i)
+
+    if count > 0:
+        mean_width /= count
+        mean_height /= count
+
+        font_size = int(max(mean_width * 0.3, 8))
+        border_thickness = max(int(mean_width / 15), 1)
+    else:
+        font_size = 16
+        border_thickness = 2
 
     try:
         font = ImageFont.truetype("fonts/DejaVuSans.ttf", font_size)
     except:
         font = ImageFont.load_default()
 
-    custom_config = r"--oem 3 --psm 6"
-    data = pytesseract.image_to_data(
-        np.array(img_pil), config=custom_config, output_type=pytesseract.Output.DICT
-    )
+    for i in valid_detections:
+        x, y, w, h = (
+            data["left"][i],
+            data["top"][i],
+            data["width"][i],
+            data["height"][i],
+        )
+        text = data["text"][i].strip()
 
-    detections = []
+        # ? Draw rectangle
+        draw.rectangle(
+            [x, y, x + w, y + h],
+            outline=border_color,
+            width=border_thickness,
+        )
 
-    for i in range(len(data["level"])):
-        if int(data["conf"][i]) > confidence_threshold:
-            x, y, w, h = (
-                data["left"][i],
-                data["top"][i],
-                data["width"][i],
-                data["height"][i],
-            )
-            text = data["text"][i].strip()
+        display_text = text_to_ascii_braille(text) if show_braille else text
 
-            if text:
-                img_np = np.array(img_pil)
-                cv2.rectangle(img_np, (x, y), (x + w, y + h), border_color, thickness)
-                img_pil = Image.fromarray(img_np)
-                draw = ImageDraw.Draw(img_pil)
+        if show_confidence:
+            display_text = f"{display_text} {int(data['conf'][i])}%"
 
-                if show_braille:
-                    braille_text = text_to_ascii_braille(text)
-                    display_text = f"{braille_text}"
-                else:
-                    display_text = text
+        bbox = draw.textbbox((0, 0), display_text, font=font)
+        text_w, text_h = bbox[2] - bbox[0], bbox[3] - bbox[1]
 
-                if show_confidence:
-                    display_text = f"{display_text} {int(data['conf'][i])}%"
+        bg_x1 = x
+        bg_x2 = x + w
+        bg_y1 = y - text_h - 8
+        bg_y2 = y
 
-                bbox = draw.textbbox((0, 0), display_text, font=font)
-                text_w, text_h = bbox[2] - bbox[0], bbox[3] - bbox[1]
+        # ? Draw boxes an text
+        draw.rectangle([bg_x1, bg_y1, bg_x2, bg_y2], fill=bg_color)
+        text_x = x + (w - text_w) // 2
+        draw.text((text_x, bg_y1 + 2), display_text, font=font, fill=font_color)
 
-                draw.rectangle([x, y - text_h - 6, x + text_w + 4, y], fill=bg_color)
-
-                draw.text(
-                    (x + 2, y - text_h - 2), display_text, font=font, fill=font_color
-                )
-
-                detections.append(
-                    {
-                        "text": text,
-                        "braille": (
-                            text_to_ascii_braille(text) if show_braille else None
-                        ),
-                        "confidence": int(data["conf"][i]),
-                        "bbox": [x, y, w, h],
-                    }
-                )
+        detections.append(
+            {
+                "text": text,
+                "braille": text_to_ascii_braille(text) if show_braille else None,
+                "confidence": int(data["conf"][i]),
+                "bbox": [x, y, w, h],
+            }
+        )
 
     img_bytes = io.BytesIO()
-    img_pil.save(img_bytes, format="JPEG")
+    img.save(img_bytes, format="JPEG")
     img_bytes.seek(0)
 
     return img_bytes, detections
