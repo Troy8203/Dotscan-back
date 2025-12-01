@@ -17,7 +17,7 @@ from app.models.predictor_braille import run_model_prediction, BINARY_TO_LETTER
 
 
 def binary_to_letter(binary_code: str) -> str:
-    return BINARY_TO_LETTER.get(binary_code.strip(), "?")
+    return BINARY_TO_LETTER.get(binary_code.strip(), "X")
 
 
 def binary_to_braille_char(binary_code: str) -> str:
@@ -37,11 +37,10 @@ def draw_braille_detections(
     image_path: str,
     results,
     border_color=(245, 166, 35),
-    font_color=(255, 255, 255),
+    font_color=(117, 44, 18),
     bg_color=(245, 166, 35),
     thickness=2,
-    font_scale=0.35,
-    show_confidence=False,
+    show_confidence=True,
 ):
 
     img = np.array(Image.open(image_path).convert("RGB"))
@@ -49,6 +48,20 @@ def draw_braille_detections(
 
     boxes = results[0].boxes
     model_names = results[0].names
+
+    mean_width = 0
+    mean_height = 0
+    for box in boxes:
+        xyxy = box.xyxy[0].cpu().numpy()
+        x1, y1, x2, y2 = map(int, xyxy)
+        mean_width += x2 - x1
+        mean_height += y2 - y1
+
+    mean_width /= len(boxes)
+    mean_height /= len(boxes)
+    font_scale = mean_width / 32
+    thickness = int(mean_width / 5)
+    font_weight = min(int(mean_width / 6), 2)
 
     for box in boxes:
         xyxy = box.xyxy[0].cpu().numpy()
@@ -63,11 +76,13 @@ def draw_braille_detections(
         cv2.rectangle(img, (x1, y1), (x2, y2), border_color, thickness)
 
         # ? Add tag
-        text_label = "{} {}".format(
-            letter, str(round(conf, 3)) if show_confidence else letter
+        text_label = (
+            letter
+            if not show_confidence
+            else f"{letter} {round(conf, 3)}" if show_confidence else letter
         )
         (text_w, text_h), _ = cv2.getTextSize(
-            text_label, cv2.FONT_HERSHEY_SIMPLEX, font_scale * 2, 2
+            text_label, cv2.FONT_HERSHEY_SIMPLEX, font_scale, 2
         )
         cv2.rectangle(img, (x1, y1 - text_h - 6), (x1 + text_w + 4, y1), bg_color, -1)
         cv2.putText(
@@ -75,9 +90,9 @@ def draw_braille_detections(
             text_label,
             (x1 + 2, y1 - 4),
             cv2.FONT_HERSHEY_SIMPLEX,
-            font_scale * 2,
+            font_scale,
             font_color,
-            2,
+            font_weight,
         )
 
         vector_resultados.append(
@@ -116,7 +131,7 @@ def image_braille_to_segmentation(
         return img_bytes
 
     except Exception as e:
-        raise RuntimeError("{Messages.EXCEPTION_DEFAULT}: {e}")
+        raise RuntimeError(f"{Messages.EXCEPTION_DEFAULT}: {e}")
 
 
 def extract_detections(temp_path: str, conf_threshold: float, iou_threshold: float):
