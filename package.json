@@ -1,0 +1,29 @@
+{
+  "name": "dotscan-backend",
+  "version": "0.0.0",
+  "description": "![Python](https://img.shields.io/badge/Python-3776AB?style=flat&logo=python&logoColor=white) ![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat&logo=fastapi&logoColor=white) ![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat&logo=docker&logoColor=white)",
+  "homepage": "https://github.com/Troy8203/Dotscan-back#readme",
+  "bugs": {
+    "url": "https://github.com/Troy8203/Dotscan-back/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Troy8203/Dotscan-back.git"
+  },
+  "license": "GPL-3.0",
+  "author": "Roy Ayala",
+  "type": "commonjs",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "devDependencies": {
+    "@release-it/conventional-changelog": "^8.0.1",
+    "conventional-changelog-conventionalcommits": "^7.0.2",
+    "release-it": "^17.0.0"
+  }
+}

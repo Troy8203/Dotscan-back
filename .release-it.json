@@ -1,0 +1,34 @@
+{
+  "git": {
+    "commitMessage": "docs: 📝 update changelog file to version ${version}",
+    "tagName": "v${version}",
+    "push": false
+  },
+  "github": {
+    "release": true
+  },
+  "npm": {
+    "publish": false
+  },
+  "plugins": {
+    "@release-it/conventional-changelog": {
+      "preset": {
+        "name": "conventionalcommits",
+        "types": [
+          { "type": "feat", "section": "🚀 Features" },
+          { "type": "fix", "section": "🐛 Bug Fixes" },
+          { "type": "docs", "section": "📚 Documentation" },
+          { "type": "style", "section": "💅 Styles" },
+          { "type": "refactor", "section": "♻️ Refactors" },
+          { "type": "perf", "section": "⚡ Performance" },
+          { "type": "test", "section": "🧪 Tests" },
+          { "type": "build", "section": "📦 Build" },
+          { "type": "ci", "section": "🔧 CI/CD" },
+          { "type": "chore", "section": "🧹 Chores" }
+        ]
+      },
+      "infile": "CHANGELOG.md",
+      "header": "# Changelog\n\n"
+    }
+  }
+}

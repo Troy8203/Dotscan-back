@@ -47,3 +47,6 @@ __pypackages__/
 
 # Report of results
 test/k6/results
+
+# Node
+node_modules
