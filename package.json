@@ -1,6 +1,6 @@
 {
   "name": "dotscan-backend",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "![Python](https://img.shields.io/badge/Python-3776AB?style=flat&logo=python&logoColor=white) ![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat&logo=fastapi&logoColor=white) ![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat&logo=docker&logoColor=white)",
   "homepage": "https://github.com/Troy8203/Dotscan-back#readme",
   "bugs": {
